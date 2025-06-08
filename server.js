@@ -1,35 +1,31 @@
-// 1) Load environment variables before anything else
+// 1) Load env first
 import 'dotenv/config';
 
+// 2) Imports
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-
 import { connectDB } from './config/db.js';
 import foodRouter from './routes/foodRoute.js';
 import userRouter from './routes/userRoute.js';
 import cartRouter from './routes/cartRoute.js';
 import orderRouter from './routes/orderRoute.js';
 
-// 2) Create Express app
+// 3) App setup
 const app = express();
 const port = process.env.PORT || 4000;
 
-// 3) Define allowed origins
+// 4) Allowed origins
 const allowedOrigins = [
-  process.env.CLIENT_URL,                           // e.g. https://thunderous-scone-2d484c.netlify.app
-  'http://localhost:5173'                           // your React dev server
-].filter(Boolean); // removes any undefined entries
+  process.env.CLIENT_URL,      // must be exactly your Netlify URL, no slash
+  'http://localhost:5173'
+].filter(Boolean);
 
-// 4) Middleware
-
-// JSON parser
+// 5) Middleware
 app.use(express.json());
-
-// CORS: allow credentials and validate origins
 app.use(cors({
   origin: (incomingOrigin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl)
+    console.log('CORS check for origin:', incomingOrigin);
     if (!incomingOrigin) return callback(null, true);
     if (allowedOrigins.includes(incomingOrigin)) {
       return callback(null, true);
@@ -38,29 +34,33 @@ app.use(cors({
   },
   credentials: true
 }));
-
-// Cookie parser
 app.use(cookieParser());
 
-// 5) Database connection
+// 6) DB
 connectDB();
 
-// 6) API routes
+// 7) Error-catching wrapper
+app.use(async (req, res, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.error('Route error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// 8) Routes
 app.use('/api/food', foodRouter);
 app.use('/images', express.static('uploads'));
 app.use('/api/user', userRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/order', orderRouter);
 
-// 7) Health check
 app.get('/', (req, res) => res.send('API Working'));
 
-// 8) Startup logs
+// 9) Startup logs & listen
 console.log('✅ Connected to DB');
-console.log('🚀 Server starting on port', port);
+console.log('🚀 Server listening on port', port);
 console.log('🌐 Allowed CORS origins:', allowedOrigins);
 
-// 9) Start server
-app.listen(port, () => {
-  console.log(`🔌 Server listening at http://localhost:${port}`);
-});
+app.listen(port);
