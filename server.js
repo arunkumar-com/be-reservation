@@ -6,6 +6,7 @@ import userRouter from "./routes/userRoute.js"
 import 'dotenv/config'
 import cartRouter from "./routes/cartRoute.js"
 import orderRouter from "./routes/orderRoute.js"
+import cookieParser from "cookie-parser"
 
 
 
@@ -16,6 +17,9 @@ const port = process.env.PORT || 4000
 //middleware
 app.use(express.json())
 app.use(cors())
+
+//  cookieparser
+app.use(cookieParser())
 
 // DB Connection
 connectDB();
